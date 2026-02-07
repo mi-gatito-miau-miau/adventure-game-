@@ -1,0 +1,105 @@
+import random
+import time
+
+# --- Player Setup ---
+player = {
+    "hp": 100, "max_hp": 100, "mana": 50, "max_mana": 50,
+    "gold": 25, "attack": 15, "weapon": "Stick",
+    "skills": [], "alignment": 0, "class": "", "level": 1
+}
+
+def typewriter(text):
+    for char in text:
+        print(char, end='', flush=True)
+        time.sleep(0.01)
+    print()
+
+def choose_class():
+    typewriter("--- CHOOSE YOUR ARCHETYPE ---")
+    print("1. Warrior (Bash: Stun/High Damage) | 2. Mage (Fireball: Massive Damage) | 3. Rogue (Steal: Take Gold & Attack)")
+    c = input("> ")
+    if c == '1': 
+        player.update({"class": "Warrior", "hp": 150, "max_hp": 150, "attack": 22, "weapon": "Broadsword", "skills": ["Bash"]})
+    elif c == '2': 
+        player.update({"class": "Mage", "mana": 100, "max_mana": 100, "attack": 10, "weapon": "Staff", "skills": ["Fireball"]})
+    else: 
+        player.update({"class": "Rogue", "gold": 100, "attack": 18, "weapon": "Daggers", "skills": ["Steal"]})
+    typewriter(f"Destiny chosen: The {player['class']}.")
+
+def combat(enemy_name, enemy_hp, enemy_atk, reward):
+    typewriter(f"\n⚔️  {enemy_name} (HP: {enemy_hp}) blocks your path!")
+    while enemy_hp > 0 and player["hp"] > 0:
+        print(f"\n{enemy_name}: {enemy_hp}HP | Your HP: {player['hp']} | Mana: {player['mana']}")
+        action = input("Actions: (A)ttack | (S)kill | (F)lee: ").lower()
+        
+        if action == 'f':
+            if random.random() < (0.7 if player["class"] == "Rogue" else 0.4):
+                typewriter("💨 You vanished into the mist!"); return "fled"
+            typewriter("🚫 No escape!")
+        
+        elif action == 's':
+            if player["mana"] >= 20:
+                player["mana"] -= 20
+                if "Fireball" in player["skills"]:
+                    dmg = random.randint(40, 60); typewriter(f"🔥 Fireball incinerates for {dmg}!")
+                elif "Bash" in player["skills"]:
+                    dmg = random.randint(30, 45); typewriter(f"🔨 Shield Bash slams for {dmg}!")
+                elif "Steal" in player["skills"]:
+                    dmg = random.randint(20, 30); loot = random.randint(5, 15)
+                    player["gold"] += loot; typewriter(f"💰 You stole {loot}g and stabbed for {dmg}!")
+                enemy_hp -= dmg
+            else: typewriter("Mana exhausted!")
+        
+        else: # Standard Attack
+            dmg = random.randint(player["attack"] - 3, player["attack"] + 3)
+            enemy_hp -= dmg; typewriter(f"You strike with {player['weapon']} for {dmg}!")
+
+        if enemy_hp > 0:
+            e_dmg = random.randint(enemy_atk - 2, enemy_atk + 2)
+            player["hp"] -= e_dmg; typewriter(f"The {enemy_name} hits you for {e_dmg}!")
+        
+    if player["hp"] > 0:
+        typewriter(f"Victory! Gained {reward}g."); player["gold"] += reward
+        player["level"] += 1; player["max_hp"] += 10; player["hp"] = player["max_hp"]
+        return "won"
+    return "died"
+
+# --- Story Acts ---
+def act_1_village():
+    typewriter("\n--- ACT I: OAKHAVEN ---")
+    typewriter("The village elder whispers: 'The Demon King seeks the 3 Sigils.'")
+    choice = input("Offer to 'help' the elder or 'steal' the village's Sigil? ").lower()
+    if "steal" in choice:
+        player["alignment"] -= 20; player["gold"] += 150; typewriter("You took the Sigil by force.")
+    else:
+        player["alignment"] += 10; typewriter("The elder gives you a 'Health Potion'.")
+
+def act_2_swamps():
+    typewriter("\n--- ACT II: THE WHISPERING SWAMPS ---")
+    typewriter("The water is thick with rot. A hooded ferryman asks for 30g.")
+    if input("Pay him? (y/n): ") == 'y' and player["gold"] >= 30:
+        player["gold"] -= 30; typewriter("He takes you safely past the Hydra.")
+    else:
+        typewriter("You wade through... and wake the Swamp Hag!")
+        if combat("Swamp Hag", 100, 15, 50) == "died": return False
+    return True
+
+def act_3_boss():
+    typewriter("\n--- ACT III: THE ABYSSAL GATE ---")
+    typewriter(f"Demon King: 'So, the {player['class']} arrives.'")
+    choice = input("(fight/join/flee): ").lower()
+    
+    if choice == "join" and player["alignment"] < 0:
+        typewriter("You kneel. Together, you burn the world. [DARK ENDING]")
+    elif choice == "flee" and player["class"] == "Rogue":
+        typewriter("You escaped with your life, but the village fell. [COWARD ENDING]")
+    else:
+        res = combat("Demon King", 250, 25, 0)
+        if res == "won": typewriter("The King dissolves into ash. Peace returns. [HERO ENDING]")
+        else: typewriter("Darkness covers the land.")
+
+if __name__ == "__main__":
+    choose_class()
+    act_1_village()
+    if act_2_swamps():
+        act_3_boss()
